@@ -48,7 +48,9 @@ public class OrderController {
     @DeleteMapping("{id}")
     @ResponseStatus(value = HttpStatus.NO_CONTENT)
     public Mono<Void> deleteOrder(@NotNull @PathVariable("id") String id){
-        return orderService.deleteOrder(id);
+        //return orderService.deleteOrder(id);
+        orderService.updateStatus("cancel", id);
+        return Mono.empty();
     }
 
 }
