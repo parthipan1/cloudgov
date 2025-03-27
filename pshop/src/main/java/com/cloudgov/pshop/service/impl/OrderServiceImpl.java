@@ -42,7 +42,8 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public Mono<Void> deleteOrder(String id) {
-        return orderRepository.deleteById(id).switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Data not found")));
+        //return orderRepository.deleteById(id).switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Data not found")));
+        updateStatus("cancel",id);
     }
 
     @Override
