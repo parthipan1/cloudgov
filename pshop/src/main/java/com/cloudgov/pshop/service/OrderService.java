@@ -18,6 +18,8 @@ public interface OrderService {
     Mono<Void> deleteOrder(String id);
 
     Mono<Order> softdeleteOrder(String id);
-    
+
     Mono<Order> updateStatus( String status, String id);
+
+    Mono<com.cloudgov.pshop.dto.Order> getOrderAggr(@NotNull String id);
 }
