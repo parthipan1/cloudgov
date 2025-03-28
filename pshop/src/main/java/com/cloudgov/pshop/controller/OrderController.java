@@ -29,6 +29,12 @@ public class OrderController {
         return orderService.getOrder(id);
     }
 
+
+    @GetMapping("{id}/aggr")
+    public Mono<com.cloudgov.pshop.dto.Order> getOrderAggr(@NotNull @PathVariable("id") String id){
+        return orderService.getOrderAggr(id);
+    }
+
     @GetMapping
     public Flux<Order> getAllOrders(){
         return orderService.getAllOrders();
