@@ -19,7 +19,8 @@ public class PizzaServiceImpl implements PizzaService {
 
     @Override
     public Mono<Pizza> savePizza(Pizza dto) {
-        return pizzaRepository.save(dto).switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Data not found")));
+        if(dto.getID()!=null) return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Id not allowed"));
+        else return pizzaRepository.save(dto).switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Data not found")));
     }
 
     @Override
