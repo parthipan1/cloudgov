@@ -1,5 +1,6 @@
 package com.cloudgov.pshop.entity;
 
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -18,10 +19,10 @@ import java.util.List;
 public class Order {
     @Id
     String ID;
-    @NotBlank(message = "pizzas is mandatory")
+    @NotNull(message = "pizzas is mandatory")
     List<String> pizzas;
     @NotBlank(message = "status is mandatory")
     String status;
-    @NotBlank(message = "timestamp is mandatory")
-    long timestamp;
+    @NotNull(message = "timestamp is mandatory")
+    Long timestamp;
 }
