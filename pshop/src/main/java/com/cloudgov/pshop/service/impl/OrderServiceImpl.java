@@ -20,7 +20,8 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public Mono<Order> saveOrder(Order dto) {
-        return orderRepository.save(dto).switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Data not found")));
+        if(dto.getID()!=null) return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Id not allowed"));
+        else return orderRepository.save(dto).switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Data not found")));
     }
 
     @Override
@@ -42,7 +43,9 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public Mono<Void> deleteOrder(String id) {
-        return orderRepository.deleteById(id).switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Data not found")));
+        return  orderRepository.findById(id).switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Data not found"))).flatMap((obj)->{
+            return orderRepository.deleteById(id);
+        });
     }
 
     @Override
