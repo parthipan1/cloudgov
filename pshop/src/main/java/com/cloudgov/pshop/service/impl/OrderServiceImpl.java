@@ -49,6 +49,18 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    public Mono<Order> softdeleteOrder(String id) {
+        return  orderRepository.findById(id).switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Data not found"))).flatMap((obj)->{
+            if("cancel".equalsIgnoreCase(obj.getStatus()))
+                return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Data Already updated"));
+            else{
+                obj.setStatus("cancel");
+                return orderRepository.save(obj);
+            }
+        });
+    }
+
+    @Override
     public Mono<Order> updateStatus(String status, String id) {
         return  orderRepository.findById(id).switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Data not found"))).flatMap((obj)->{
             obj.setStatus(status);
