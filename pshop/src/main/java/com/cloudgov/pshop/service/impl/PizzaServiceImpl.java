@@ -41,6 +41,8 @@ public class PizzaServiceImpl implements PizzaService {
 
     @Override
     public Mono<Void> deletePizza(String id) {
-        return pizzaRepository.deleteById(id).switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Data not found")));
+        return  pizzaRepository.findById(id).switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Data not found"))).flatMap((obj)->{
+            return pizzaRepository.deleteById(id);
+        });
     }
 }
