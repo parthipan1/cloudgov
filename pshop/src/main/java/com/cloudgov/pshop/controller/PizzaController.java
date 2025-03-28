@@ -5,6 +5,7 @@ import com.cloudgov.pshop.service.PizzaService;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -19,7 +20,7 @@ public class PizzaController {
 
     @PostMapping
     @ResponseStatus(value = HttpStatus.CREATED)
-    public Mono<Pizza> savePizza(@NotNull  @RequestBody Pizza dto){
+    public Mono<Pizza> savePizza(@NotNull @Validated @RequestBody Pizza dto){
         return pizzaService.savePizza(dto);
     }
 
@@ -34,7 +35,7 @@ public class PizzaController {
     }
 
     @PutMapping("{id}")
-    public Mono<Pizza> updatePizza(@NotNull @RequestBody Pizza dto,
+    public Mono<Pizza> updatePizza(@NotNull @Validated @RequestBody Pizza dto,
                                    @NotNull @PathVariable("id") String id){
         return pizzaService.updatePizza(dto, id);
     }
