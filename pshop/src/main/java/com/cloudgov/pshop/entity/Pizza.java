@@ -1,5 +1,6 @@
 package com.cloudgov.pshop.entity;
 
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -21,11 +22,11 @@ public class Pizza {
     @NotBlank(message = "name is mandatory")
     String name;
     String description;
-    @NotBlank(message = "toppings is mandatory")
+    @NotNull(message = "toppings is mandatory")
     List<String> toppings;
     @NotBlank(message = "size is mandatory")
     String size;
-    @NotBlank(message = "price is mandatory")
-    double price;
+    @NotNull(message = "price is mandatory")
+    Double price;
 
 }
