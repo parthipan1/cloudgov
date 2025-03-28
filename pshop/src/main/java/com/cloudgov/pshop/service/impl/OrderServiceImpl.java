@@ -1,9 +1,9 @@
 package com.cloudgov.pshop.service.impl;
 
 import com.cloudgov.pshop.entity.Order;
-import com.cloudgov.pshop.entity.Pizza;
 import com.cloudgov.pshop.mapper.DTOMapper;
 import com.cloudgov.pshop.repository.OrderRepository;
+import com.cloudgov.pshop.repository.PizzaRepository;
 import com.cloudgov.pshop.service.OrderService;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -12,16 +12,28 @@ import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
+
 @Service
 @AllArgsConstructor
 public class OrderServiceImpl implements OrderService {
 
     private OrderRepository orderRepository;
 
+    private PizzaRepository pizzaRepository;
+
     @Override
     public Mono<Order> saveOrder(Order dto) {
-        if(dto.getID()!=null) return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Id not allowed"));
-        else return orderRepository.save(dto).switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Data not found")));
+        if(dto.getID()!=null) return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Id not allowed"));
+        else {
+            return validatePizzas(dto.getPizzas()).flatMap((flag) ->{
+                            if(flag) {
+                                return orderRepository.save(dto).switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Data not found")));
+                            } else
+                                return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid Pizza Specified!"));
+                        }
+                    );
+        }
     }
 
     @Override
@@ -36,9 +48,15 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public Mono<Order> updateOrder(Order dto, String id) {
-        return  orderRepository.findById(id).switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Data not found"))).flatMap((obj)->{
-            return orderRepository.save(DTOMapper.map(obj,dto));
-        });
+            return  orderRepository.findById(id).switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Data not found"))).flatMap((obj)->{
+                return validatePizzas(dto.getPizzas()).flatMap((flag) ->{
+                    if(flag) {
+                        return orderRepository.save(DTOMapper.map(obj,dto));
+                    } else
+                        return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid Pizza Specified!"));
+                    }
+                    );
+            });
     }
 
     @Override
@@ -50,13 +68,9 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public Mono<Order> softdeleteOrder(String id) {
-        return  orderRepository.findById(id).switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Data not found"))).flatMap((obj)->{
-            if("cancel".equalsIgnoreCase(obj.getStatus()))
-                return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Data Already updated"));
-            else{
-                obj.setStatus("cancel");
-                return orderRepository.save(obj);
-            }
+        return  orderRepository.findByIDAndStatusNot(id, "cancel").switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Data not found"))).flatMap((obj)->{
+           obj.setStatus("cancel");
+           return orderRepository.save(obj);
         });
     }
 
@@ -66,5 +80,10 @@ public class OrderServiceImpl implements OrderService {
             obj.setStatus(status);
             return orderRepository.save(obj);
         });
+    }
+
+    Mono<Boolean> validatePizzas(List<String> ids){
+        if(ids.isEmpty()) return Mono.just(false);
+        else return pizzaRepository.findAllById(ids).collectList().flatMap((objs) -> Mono.just(ids.size() == objs.size()));
     }
 }
