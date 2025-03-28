@@ -82,6 +82,20 @@ public class OrderServiceImpl implements OrderService {
         });
     }
 
+    @Override
+    public Mono<com.cloudgov.pshop.dto.Order> getOrderAggr(String id) {
+        return  orderRepository.findById(id).switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Data not found"))).flatMap((obj)->{
+            return pizzaRepository.findAllById(obj.getPizzas()).collectList().flatMap((objs) -> {
+                return Mono.just(com.cloudgov.pshop.dto.Order.builder()
+                                .ID(obj.getID())
+                                .pizzas(objs)
+                                .status(obj.getStatus())
+                                .timestamp(obj.getTimestamp())
+                        .build());
+            });
+        });
+    }
+
     Mono<Boolean> validatePizzas(List<String> ids){
         if(ids.isEmpty()) return Mono.just(false);
         else return pizzaRepository.findAllById(ids).collectList().flatMap((objs) -> Mono.just(ids.size() == objs.size()));
