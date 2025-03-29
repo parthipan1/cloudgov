@@ -95,37 +95,17 @@ public class OrderServiceImpl implements OrderService {
     @Override
     public Mono<com.cloudgov.pshop.dto.Order> getOrderAggr(String id) {
 
-        // unwind
         UnwindOperation unwindOperation = Aggregation.unwind("$pizzas");
-//        $addFields: {
-//            userIdObjectId: { $toObjectId: "$pizzas" }
-//        }
         AddFieldsOperation addFieldsOperation = Aggregation.addFields().addFieldWithValueOf("pizzaObjectId", Map.of("$toObjectId", "$pizzas")).build();
-
         LookupOperation  lookupOperation = Aggregation.lookup("pizzas", "pizzaObjectId", "_id", "pizzas");
         MatchOperation matchOperation = Aggregation.match(Criteria.where("_id").is(id));
-//        // group
-//        GroupOperation groupOperation = Aggregation.group("skills").push("name").as("names");
-        // project
-        ProjectionOperation projectionOperation = Aggregation.project("status", "timestamp", "pizza")
-                                .and("_id").as("ID")
 
-                .and("$pizza._id").as("pizzaId")
-                .and("$pizza.name").as("name")
-                .and("$pizza.description").as("description")
-                .and("$pizza.toppings").as("toppings")
-                .and("$pizza.size").as("size")
-                .and("$pizza.price").as("price")
-                ;
-
-        // add all the stages
         TypedAggregation<Order> orderTypedAggregation = Aggregation.newAggregation(
                 Order.class,
                 matchOperation,
                 unwindOperation,
                 addFieldsOperation,
-                lookupOperation//,
-//                projectionOperation
+                lookupOperation
         );
 
         return reactiveMongoTemplate
