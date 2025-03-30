@@ -1,13 +1,13 @@
 package com.cloudgov.pshop.service.impl;
 
-import com.cloudgov.pshop.dto.OrderPizza;
 import com.cloudgov.pshop.entity.Order;
-import com.cloudgov.pshop.entity.Pizza;
 import com.cloudgov.pshop.mapper.DTOMapper;
 import com.cloudgov.pshop.repository.OrderRepository;
 import com.cloudgov.pshop.repository.PizzaRepository;
 import com.cloudgov.pshop.service.OrderService;
+
 import lombok.AllArgsConstructor;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.ReactiveMongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.*;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -17,7 +17,6 @@ import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -93,53 +92,31 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public Mono<com.cloudgov.pshop.dto.Order> getOrderAggr(String id) {
-
+    public Flux<com.cloudgov.pshop.dto.Order> getOrderAggr(List<String> ids) {
         UnwindOperation unwindOperation = Aggregation.unwind("$pizzas");
         AddFieldsOperation addFieldsOperation = Aggregation.addFields().addFieldWithValueOf("pizzaObjectId", Map.of("$toObjectId", "$pizzas")).build();
         LookupOperation  lookupOperation = Aggregation.lookup("pizzas", "pizzaObjectId", "_id", "pizzas");
-        MatchOperation matchOperation = Aggregation.match(Criteria.where("_id").is(id));
-
+        MatchOperation matchOperation = Aggregation.match(Criteria.where("_id").in(ids));
+        GroupOperation groupOperation = Aggregation.group(Fields.fields("ID", "$_id").and("status", "$status").and("timestamp", "$timestamp")).addToSet("$pizzas").as("pizzas");
+        ProjectionOperation projectionOperation = Aggregation.project(Fields.fields("_id", "$_id.ID").and("status", "$_id.status").and("timestamp", "$_id.timestamp").and("pizzas"));
+        SortOperation sortOperation = Aggregation.sort(Sort.Direction.DESC, "timestamp");
         TypedAggregation<Order> orderTypedAggregation = Aggregation.newAggregation(
                 Order.class,
                 matchOperation,
                 unwindOperation,
                 addFieldsOperation,
-                lookupOperation
+                lookupOperation,
+                unwindOperation,
+                groupOperation,
+                projectionOperation,
+                sortOperation
         );
 
         return reactiveMongoTemplate
                 .aggregate(
                         orderTypedAggregation,
-                        OrderPizza.class
-                ).collectList().flatMap((objs)->{
-                    if(objs.isEmpty()) return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Data not found"));
-                    else{
-                        OrderPizza orderPizza = objs.getFirst();
-                        List<Pizza> pizzas = new ArrayList<>(objs.size());
-                        for(OrderPizza op:objs){
-                            pizzas.addAll(op.getPizzas());
-                        }
-                        return Mono.just(com.cloudgov.pshop.dto.Order.builder()
-                                .ID(id)
-                                .pizzas(pizzas)
-                                .status(orderPizza.getStatus())
-                                .timestamp(orderPizza.getTimestamp())
-                                .build());
-                    }
-                });
-
-
-//        return orderRepository.findById(id).switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Data not found"))).flatMap((obj) -> {
-//            return pizzaRepository.findAllById(  obj.getPizzas() ).collectList().flatMap((objs) -> {
-//                return Mono.just(com.cloudgov.pshop.dto.Order.builder()
-//                        .ID(obj.getID())
-//                        .pizzas(objs)
-//                        .status(obj.getStatus())
-//                        .timestamp(obj.getTimestamp())
-//                        .build());
-//            });
-//        });
+                        com.cloudgov.pshop.dto.Order.class
+                );
     }
 
     Mono<Boolean> validatePizzas(List<String> ids) {
